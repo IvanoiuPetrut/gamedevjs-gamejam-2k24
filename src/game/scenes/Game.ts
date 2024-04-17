@@ -46,22 +46,51 @@ export class Game extends Scene {
     }
 
     create() {
-        const map = this.make.tilemap({ key: "tilemap" });
-        map.addTilesetImage("cave", "base_tiles");
+        const mapOffset = {
+            x: -320,
+            y: -910,
+        };
+        const map = this.make.tilemap({
+            key: "tilemap",
+            tileWidth: 8,
+            tileHeight: 8,
+        });
+        map.addTilesetImage("Base_tileset", "base_tiles");
 
-        const bg = map.createLayer("bg", "cave", -110, -64);
-        const ground = map.createLayer("Ground", "cave", -110, -64);
-        ground?.setCollisionByProperty({ collides: true });
+        map.createLayer("Background", "Base_tileset", mapOffset.x, mapOffset.y);
+        map.createLayer(
+            "Decorations",
+            "Base_tileset",
+            mapOffset.x,
+            mapOffset.y
+        );
+        const ground = map.createLayer(
+            "Ground",
+            "Base_tileset",
+            mapOffset.x,
+            mapOffset.y
+        );
+        const timeGround = map.createLayer(
+            "SecondGround",
+            "Base_tileset",
+            mapOffset.x,
+            mapOffset.y
+        );
+        ground?.setCollisionByProperty({ collision: true });
+        //deactivate visibility and collision
+        // ground?.setVisible(false);
 
         // Player
 
         this.player = this.physics.add
-            .sprite(90, 50, "player_sprite")
+            .sprite(150, 75, "player_sprite")
             .setOrigin(0, 0);
         this.player.setBounce(0.2);
 
         if (ground) {
-            this.physics.add.collider(this.player, ground);
+            const colider = this.physics.add.collider(this.player, ground);
+            //remove the collision with the ground
+            // this.physics.world.removeCollider(colider);
         }
 
         // ! raycast for hook

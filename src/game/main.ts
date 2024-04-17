@@ -7,10 +7,10 @@ import PhaserRaycaster from "phaser-raycaster";
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
 const config: Types.Core.GameConfig = {
     type: AUTO,
-    width: 192,
-    height: 112,
+    width: 192, //192
+    height: 112, //112
     pixelArt: true,
-    zoom: 6,
+    zoom: 6, // 6
     physics: {
         default: "arcade",
         arcade: {
