@@ -6,6 +6,10 @@ const MOVE_SPEED = 80;
 const JUMP_SPEED = 120;
 
 export class Game extends Scene {
+    private backgrounds: {
+        ratioX: number;
+        sprite: Phaser.GameObjects.TileSprite;
+    }[] = [];
     raycasterPlugin: PhaserRaycaster;
     raycaster: Raycaster | undefined;
     hookRay: Raycaster.Ray | undefined;
@@ -35,6 +39,11 @@ export class Game extends Scene {
         this.load.image("logo", "logo.png");
         this.load.image("ground", "ground.png");
 
+        //for paralax
+        this.load.image("bg1", "background/bg1.png");
+        this.load.image("bg2", "background/bg2.png");
+        this.load.image("bg3", "background/bg3.png");
+
         this.load.image("base_tiles", "tiles.png");
         this.load.tilemapTiledJSON("tilemap", "map.json");
 
@@ -46,9 +55,29 @@ export class Game extends Scene {
     }
 
     create() {
+        // * Paralax BG
+        const { width, height } = this.scale;
+        this.add.image(0, 0, "bg1").setOrigin(0, 0).setScrollFactor(0);
+
+        this.backgrounds.push({
+            ratioX: 0.01,
+            sprite: this.add
+                .tileSprite(0, 0, width, height, "bg2")
+                .setOrigin(0, 0)
+                .setScrollFactor(0.0),
+        });
+
+        this.backgrounds.push({
+            ratioX: 0.8,
+            sprite: this.add
+                .tileSprite(0, 0, width, height, "bg3")
+                .setOrigin(0, 0)
+                .setScrollFactor(0.0),
+        });
+
         const mapOffset = {
-            x: -320,
-            y: -910,
+            x: -220,
+            y: -880,
         };
         const map = this.make.tilemap({
             key: "tilemap",
@@ -158,8 +187,16 @@ export class Game extends Scene {
     }
 
     update() {
+        // * Paralax BG
+
+        for (let i = 0; i < this.backgrounds.length; ++i) {
+            const bg = this.backgrounds[i];
+
+            bg.sprite.tilePositionX = this.cameras.main.scrollX * bg.ratioX;
+        }
+
         if (this.player) {
-            this.cameras.main.startFollow(this.player, false, 1, 1, 0, 15);
+            this.cameras.main.startFollow(this.player, false, 1, 1, 0, 25);
         }
 
         if (this.hook && this.player) {
