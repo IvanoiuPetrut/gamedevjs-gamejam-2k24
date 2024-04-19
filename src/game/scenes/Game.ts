@@ -62,7 +62,7 @@ export class Game extends Scene {
         this.add.image(0, 0, "bg1").setOrigin(0, 0).setScrollFactor(0);
 
         this.backgrounds.push({
-            ratioX: 0.01,
+            ratioX: 0.05,
             sprite: this.add
                 .tileSprite(0, 0, width, height, "bg2")
                 .setOrigin(0, 0)
@@ -70,21 +70,22 @@ export class Game extends Scene {
         });
 
         this.backgrounds.push({
-            ratioX: 0.8,
+            ratioX: 0.1,
             sprite: this.add
                 .tileSprite(0, 0, width, height, "bg3")
                 .setOrigin(0, 0)
                 .setScrollFactor(0.0),
         });
+
         this.backgrounds.push({
-            ratioX: 1.8,
+            ratioX: 0.01,
             sprite: this.add
                 .tileSprite(0, 0, width, height, "bg4")
                 .setOrigin(0, 0)
                 .setScrollFactor(0.0),
         });
         this.backgrounds.push({
-            ratioX: 2.8,
+            ratioX: 0.5,
             sprite: this.add
                 .tileSprite(0, 0, width, height, "bg5")
                 .setOrigin(0, 0)
