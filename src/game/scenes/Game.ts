@@ -1,6 +1,6 @@
 import { Scene } from "phaser";
 import { EventBus } from "../EventBus";
-import PhaserRaycaster from "phaser-raycaster";
+import { PostFxPipeline } from "../shaders/post-fx-pipeline";
 
 const MOVE_SPEED = 80;
 const JUMP_SPEED = 120;
@@ -10,23 +10,10 @@ export class Game extends Scene {
         ratioX: number;
         sprite: Phaser.GameObjects.TileSprite;
     }[] = [];
-    raycasterPlugin: PhaserRaycaster;
-    raycaster: Raycaster | undefined;
-    hookRay: Raycaster.Ray | undefined;
-    cursor: Phaser.Types.Input.Keyboard.CursorKeys | undefined;
-    player: Phaser.Physics.Arcade.Sprite | undefined;
-    hook: Phaser.GameObjects.Rectangle | undefined;
-    hookLine: Phaser.GameObjects.Line | undefined;
-    MIN_JUMP_SPEED = 0;
-    MAX_JUMP_SPEED = 240;
-    currentJumpSpeed = 20;
-    JUMP_SPEED_INCREMENT = 20;
-    shiftMode = false;
-    canEnterShiftMode = true;
-    hookOffset = {
-        x: 2,
-        y: 6,
-    };
+    private cursor: Phaser.Types.Input.Keyboard.CursorKeys | undefined;
+    private player: Phaser.Physics.Arcade.Sprite | undefined;
+    private isInTimeMode = false;
+
     constructor() {
         super("Game");
     }
@@ -85,12 +72,16 @@ export class Game extends Scene {
                 .setScrollFactor(0.0),
         });
         this.backgrounds.push({
-            ratioX: 0.5,
+            ratioX: 0.3,
             sprite: this.add
                 .tileSprite(0, 0, width, height, "bg5")
                 .setOrigin(0, 0)
                 .setScrollFactor(0.0),
         });
+
+        this.backgrounds[0].sprite.postFX.addShine(0.3, 2, 3, true);
+        this.backgrounds[1].sprite.postFX.addShine(0.1, 2, 3, true);
+        this.backgrounds[2].sprite.postFX.addGlow(0xffffff, 0.5, 0);
 
         const mapOffset = {
             x: -750,
@@ -103,8 +94,18 @@ export class Game extends Scene {
         });
         map.addTilesetImage("environemnt", "base_tiles");
 
-        map.createLayer("Trees", "environemnt", mapOffset.x, mapOffset.y);
-        map.createLayer("Decorations", "environemnt", mapOffset.x, mapOffset.y);
+        const trees = map.createLayer(
+            "Trees",
+            "environemnt",
+            mapOffset.x,
+            mapOffset.y
+        );
+        const decorations = map.createLayer(
+            "Decorations",
+            "environemnt",
+            mapOffset.x,
+            mapOffset.y
+        );
         const ground = map.createLayer(
             "Ground",
             "environemnt",
@@ -117,6 +118,12 @@ export class Game extends Scene {
         this.player = this.physics.add
             .sprite(150, 75, "player_sprite-sheet")
             .setOrigin(0, 0);
+
+        // this.player.postFX?.addBloom(0xff5733, 1, 1, 1, 1, 4);
+        this.player.postFX?.addGlow(0xff5733, 1, 4, true);
+        decorations?.postFX.addGlow(0x89f335, 0.9, 2, true);
+        decorations?.postFX.addBokeh(0.2, 0.5);
+        ground?.postFX.addBokeh(0.2, 0.5);
 
         this.anims.create({
             key: "idle",
@@ -158,6 +165,34 @@ export class Game extends Scene {
             console.log("space down");
             this.player?.setVelocityY(-JUMP_SPEED);
         });
+
+        this.input.keyboard?.on("keydown-C", () => {
+            console.log("c");
+            this.isInTimeMode = !this.isInTimeMode;
+            if (this.isInTimeMode) {
+                trees?.postFX.addBarrel(0.5);
+                decorations?.postFX.addBarrel(0.5);
+
+                trees?.postFX.addVignette(0.5, 0.5, 0.3);
+                decorations?.postFX.addVignette(0.5, 0.5, 0.5);
+
+                this.cameras.main.postFX.addVignette(0.5, 0.5, 0.6);
+            } else {
+                this.cameras.main.postFX.disable(true);
+                trees?.postFX.disable(true);
+                decorations?.postFX.disable(true);
+                decorations?.postFX.addGlow(0x89f335, 0.9, 2, true);
+                decorations?.postFX.addBokeh(0.2, 0.5);
+            }
+        });
+
+        //renderer
+
+        // (
+        //     this.renderer as Phaser.Renderer.WebGL.WebGLRenderer
+        // ).pipelines.addPostPipeline("PostFxPipeline", PostFxPipeline);
+
+        // this.cameras.main.setPostPipeline(PostFxPipeline);
 
         EventBus.emit("current-scene-ready", this);
     }

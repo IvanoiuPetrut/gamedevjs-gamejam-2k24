@@ -1,12 +1,11 @@
 import { Game as MainGame } from "./scenes/Game";
 import { MainMenu } from "./scenes/MainMenu";
-import { AUTO, Game, Types } from "phaser";
-import PhaserRaycaster from "phaser-raycaster";
+import { WEBGL, AUTO, Game, Types } from "phaser";
 
 //  Find out more information about the Game Config at:
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
 const config: Types.Core.GameConfig = {
-    type: AUTO,
+    type: WEBGL,
     width: 352, //192
     height: 160, //112
     pixelArt: true,
@@ -19,17 +18,8 @@ const config: Types.Core.GameConfig = {
         },
     },
     parent: "game-container",
-    backgroundColor: "#728af8",
+    backgroundColor: "#1c1b1b",
     scene: [MainGame, MainMenu],
-    plugins: {
-        scene: [
-            {
-                key: "PhaserRaycaster",
-                plugin: PhaserRaycaster,
-                mapping: "raycasterPlugin",
-            },
-        ],
-    },
 };
 
 const StartGame = (parent) => {
