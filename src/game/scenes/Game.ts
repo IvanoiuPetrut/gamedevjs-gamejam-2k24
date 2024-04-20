@@ -13,6 +13,8 @@ export class Game extends Scene {
     private cursor: Phaser.Types.Input.Keyboard.CursorKeys | undefined;
     private player: Phaser.Physics.Arcade.Sprite | undefined;
     private isInTimeMode = false;
+    private runEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
+    private footstep: Phaser.Sound.BaseSound | undefined;
 
     constructor() {
         super("Game");
@@ -21,12 +23,6 @@ export class Game extends Scene {
     preload() {
         this.load.setPath("assets");
 
-        this.load.image("star", "star.png");
-        this.load.image("background", "bg.png");
-        this.load.image("logo", "logo.png");
-        this.load.image("ground", "ground.png");
-
-        //for paralax
         this.load.image("bg1", "background/bg1.png");
         this.load.image("bg2", "background/bg2.png");
         this.load.image("bg3", "background/bg3.png");
@@ -36,14 +32,40 @@ export class Game extends Scene {
         this.load.image("base_tiles", "environment.png");
         this.load.tilemapTiledJSON("tilemap", "minimalistic.json");
 
-        // Player
         this.load.spritesheet("player_sprite-sheet", "player.png", {
             frameWidth: 8,
             frameHeight: 12,
         });
+
+        this.load.image("brush", "brush2.png");
+
+        this.load.audio("bg-music", "audio/bg.wav");
+        this.load.audio("footstep", "audio/footstep.ogg");
+        this.load.audio("jump", "audio/jump.ogg");
+        this.load.audio("time-mode", "audio/time-mode.ogg");
     }
 
     create() {
+        const bgMusic = this.sound.add("bg-music", {
+            loop: true,
+            volume: 0.3,
+        });
+        const jumpSound = this.sound.add("jump", {
+            volume: 0.5,
+            rate: 0.8,
+        });
+        const timeModeSound = this.sound.add("time-mode", {
+            volume: 0.5,
+            rate: 0.7,
+        });
+        this.footstep = this.sound.add("footstep", {
+            volume: 0.5,
+            loop: true,
+            rate: 0.3,
+        });
+        bgMusic.play();
+        this.footstep.play();
+        this.footstep.pause();
         // * Paralax BG
         const { width, height } = this.scale;
         this.add.image(0, 0, "bg1").setOrigin(0, 0).setScrollFactor(0);
@@ -119,11 +141,25 @@ export class Game extends Scene {
             .sprite(150, 75, "player_sprite-sheet")
             .setOrigin(0, 0);
 
+        this.cameras.main.postFX.addVignette(0.5, 0.5, 0.9);
         // this.player.postFX?.addBloom(0xff5733, 1, 1, 1, 1, 4);
         this.player.postFX?.addGlow(0xff5733, 1, 4, true);
         decorations?.postFX.addGlow(0x89f335, 0.9, 2, true);
         decorations?.postFX.addBokeh(0.2, 0.5);
         ground?.postFX.addBokeh(0.2, 0.5);
+
+        this.runEmitter = this.add.particles(0, 0, "brush", {
+            speedX: 10,
+            speedY: -10,
+            lifespan: 200,
+            scale: { start: 0.1, end: 0 },
+            blendMode: "ADD",
+            tint: [0xff5733, 0xffffff, 0xff5733, 0xffffff],
+            bounce: 0.5,
+        });
+
+        this.runEmitter.startFollow(this.player, 2, 12);
+        this.runEmitter.setAlpha(0);
 
         this.anims.create({
             key: "idle",
@@ -164,16 +200,17 @@ export class Game extends Scene {
         this.input.keyboard?.on("keydown-SPACE", () => {
             console.log("space down");
             this.player?.setVelocityY(-JUMP_SPEED);
+            jumpSound.play();
         });
 
         this.input.keyboard?.on("keydown-C", () => {
-            console.log("c");
+            timeModeSound.play();
             this.isInTimeMode = !this.isInTimeMode;
             if (this.isInTimeMode) {
                 trees?.postFX.addBarrel(0.5);
                 decorations?.postFX.addBarrel(0.5);
 
-                trees?.postFX.addVignette(0.5, 0.5, 0.3);
+                trees?.postFX.addVignette(0.1, 0.1, 0.6, 0.2);
                 decorations?.postFX.addVignette(0.5, 0.5, 0.5);
 
                 this.cameras.main.postFX.addVignette(0.5, 0.5, 0.6);
@@ -183,16 +220,9 @@ export class Game extends Scene {
                 decorations?.postFX.disable(true);
                 decorations?.postFX.addGlow(0x89f335, 0.9, 2, true);
                 decorations?.postFX.addBokeh(0.2, 0.5);
+                this.cameras.main.postFX.addVignette(0.5, 0.5, 0.9);
             }
         });
-
-        //renderer
-
-        // (
-        //     this.renderer as Phaser.Renderer.WebGL.WebGLRenderer
-        // ).pipelines.addPostPipeline("PostFxPipeline", PostFxPipeline);
-
-        // this.cameras.main.setPostPipeline(PostFxPipeline);
 
         EventBus.emit("current-scene-ready", this);
     }
@@ -213,18 +243,41 @@ export class Game extends Scene {
                 this.player?.setVelocityX(-MOVE_SPEED);
                 this.player?.anims.play("walk", true);
                 this.player?.setFlipX(true);
+                this.runEmitter.setAlpha(1);
+                this.footstep?.resume();
             } else if (this.cursor.right?.isDown) {
                 this.player?.setVelocityX(MOVE_SPEED);
                 this.player?.anims.play("walk", true);
                 this.player?.setFlipX(false);
+                this.runEmitter.setAlpha(1);
+                this.footstep?.resume();
             } else {
                 this.player?.setVelocityX(0);
                 this.player?.anims.play("idle", true);
+                this.runEmitter.setAlpha(0);
+                this.footstep?.pause();
             }
 
             if (this.cursor.up?.isDown && this.player?.body?.blocked.down) {
                 this.player?.setVelocityY(-JUMP_SPEED);
                 this.player?.anims.play("jump", true);
+            }
+
+            if (this.cursor.left?.isDown && this.cursor.right?.isDown) {
+                this.player?.setVelocityX(0);
+                this.player?.anims.play("idle", true);
+                this.runEmitter.setAlpha(0);
+            }
+
+            if (this.cursor.left?.isDown && !this.player?.body?.blocked.down) {
+                this.runEmitter.setAlpha(0);
+                this.footstep?.pause();
+            } else if (
+                this.cursor.right?.isDown &&
+                !this.player?.body?.blocked.down
+            ) {
+                this.runEmitter.setAlpha(0);
+                this.footstep?.pause();
             }
         }
     }
