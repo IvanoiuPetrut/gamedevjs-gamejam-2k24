@@ -2,8 +2,8 @@ import { Scene } from "phaser";
 import { EventBus } from "../EventBus";
 import { PostFxPipeline } from "../shaders/post-fx-pipeline";
 
-const MOVE_SPEED = 80;
-const JUMP_SPEED = 120;
+const MOVE_SPEED = 70;
+const JUMP_SPEED = 150;
 
 export class Game extends Scene {
     private backgrounds: {
@@ -198,23 +198,25 @@ export class Game extends Scene {
         this.cursor = this.input.keyboard?.createCursorKeys();
 
         this.input.keyboard?.on("keydown-SPACE", () => {
-            console.log("space down");
-            this.player?.setVelocityY(-JUMP_SPEED);
-            jumpSound.play();
+            if (this.player?.body?.blocked.down) {
+                this.player?.setVelocityY(-JUMP_SPEED);
+                this.player?.anims.play("jump", true);
+                jumpSound.play();
+            }
         });
 
         this.input.keyboard?.on("keydown-C", () => {
             timeModeSound.play();
             this.isInTimeMode = !this.isInTimeMode;
             if (this.isInTimeMode) {
+                bgMusic.rate = 0.5;
                 trees?.postFX.addBarrel(0.5);
                 decorations?.postFX.addBarrel(0.5);
-
                 trees?.postFX.addVignette(0.1, 0.1, 0.6, 0.2);
                 decorations?.postFX.addVignette(0.5, 0.5, 0.5);
-
                 this.cameras.main.postFX.addVignette(0.5, 0.5, 0.6);
             } else {
+                bgMusic.rate = 1;
                 this.cameras.main.postFX.disable(true);
                 trees?.postFX.disable(true);
                 decorations?.postFX.disable(true);
