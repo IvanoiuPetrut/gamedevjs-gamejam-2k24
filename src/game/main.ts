@@ -1,4 +1,5 @@
 import { Game as MainGame } from "./scenes/Game";
+import { Preload } from "./scenes/Preload";
 import { MainMenu } from "./scenes/MainMenu";
 import { WEBGL, AUTO, Game, Types } from "phaser";
 
@@ -19,7 +20,7 @@ const config: Types.Core.GameConfig = {
     },
     parent: "game-container",
     backgroundColor: "#1c1b1b",
-    scene: [MainGame, MainMenu],
+    scene: [Preload, MainGame, MainMenu],
 };
 
 const StartGame = (parent) => {

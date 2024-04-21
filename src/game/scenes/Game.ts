@@ -1,6 +1,5 @@
 import { Scene } from "phaser";
 import { EventBus } from "../EventBus";
-import { PostFxPipeline } from "../shaders/post-fx-pipeline";
 
 const MOVE_SPEED = 70;
 const JUMP_SPEED = 150;
@@ -15,35 +14,14 @@ export class Game extends Scene {
     private isInTimeMode = false;
     private runEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
     private footstep: Phaser.Sound.BaseSound | undefined;
+    private secondGroundColider: Phaser.Physics.Arcade.Collider | undefined;
+    private timeGroundColider: Phaser.Physics.Arcade.Collider | undefined;
 
     constructor() {
         super("Game");
     }
 
-    preload() {
-        this.load.setPath("assets");
-
-        this.load.image("bg1", "background/bg1.png");
-        this.load.image("bg2", "background/bg2.png");
-        this.load.image("bg3", "background/bg3.png");
-        this.load.image("bg4", "background/bg4.png");
-        this.load.image("bg5", "background/bg5.png");
-
-        this.load.image("base_tiles", "environment.png");
-        this.load.tilemapTiledJSON("tilemap", "minimalistic.json");
-
-        this.load.spritesheet("player_sprite-sheet", "player.png", {
-            frameWidth: 8,
-            frameHeight: 12,
-        });
-
-        this.load.image("brush", "brush2.png");
-
-        this.load.audio("bg-music", "audio/bg.wav");
-        this.load.audio("footstep", "audio/footstep.ogg");
-        this.load.audio("jump", "audio/jump.ogg");
-        this.load.audio("time-mode", "audio/time-mode.ogg");
-    }
+    preload() {}
 
     create() {
         const bgMusic = this.sound.add("bg-music", {
@@ -51,7 +29,7 @@ export class Game extends Scene {
             volume: 0.3,
         });
         const jumpSound = this.sound.add("jump", {
-            volume: 0.5,
+            volume: 1,
             rate: 0.8,
         });
         const timeModeSound = this.sound.add("time-mode", {
@@ -67,6 +45,7 @@ export class Game extends Scene {
         this.footstep.play();
         this.footstep.pause();
         // * Paralax BG
+
         const { width, height } = this.scale;
         this.add.image(0, 0, "bg1").setOrigin(0, 0).setScrollFactor(0);
 
@@ -101,10 +80,11 @@ export class Game extends Scene {
                 .setScrollFactor(0.0),
         });
 
-        this.backgrounds[0].sprite.postFX.addShine(0.3, 2, 3, true);
-        this.backgrounds[1].sprite.postFX.addShine(0.1, 2, 3, true);
-        this.backgrounds[2].sprite.postFX.addGlow(0xffffff, 0.5, 0);
-
+        if (this.backgrounds.length > 0) {
+            this.backgrounds[0].sprite.postFX.addShine(0.3, 2, 3, true);
+            this.backgrounds[1].sprite.postFX.addShine(0.1, 2, 3, true);
+            this.backgrounds[2].sprite.postFX.addGlow(0xffffff, 0.5, 0);
+        }
         const mapOffset = {
             x: -750,
             y: -1800,
@@ -114,6 +94,11 @@ export class Game extends Scene {
             tileWidth: 16,
             tileHeight: 16,
         });
+
+        this.player = this.physics.add
+            .sprite(150, 75, "player_sprite-sheet")
+            .setOrigin(0, 0);
+
         map.addTilesetImage("environemnt", "base_tiles");
 
         const trees = map.createLayer(
@@ -134,19 +119,42 @@ export class Game extends Scene {
             mapOffset.x,
             mapOffset.y
         );
+        const secondGround = map.createLayer(
+            "SecondGround",
+            "environemnt",
+            mapOffset.x,
+            mapOffset.y
+        );
+        const timeGround = map.createLayer(
+            "TimeGround",
+            "environemnt",
+            mapOffset.x,
+            mapOffset.y
+        );
         ground?.setCollisionByProperty({ collision: true });
-        // ground?.setVisible(false);
+        secondGround?.setCollisionByProperty({ collision: true });
+        timeGround?.setCollisionByProperty({ collision: true });
 
-        this.player = this.physics.add
-            .sprite(150, 75, "player_sprite-sheet")
-            .setOrigin(0, 0);
+        timeGround?.setAlpha(0.3);
+
+        if (ground) {
+            this.physics.add.collider(this.player, ground);
+        }
+
+        if (secondGround) {
+            this.secondGroundColider = this.physics.add.collider(
+                this.player,
+                secondGround
+            );
+        }
 
         this.cameras.main.postFX.addVignette(0.5, 0.5, 0.9);
-        // this.player.postFX?.addBloom(0xff5733, 1, 1, 1, 1, 4);
         this.player.postFX?.addGlow(0xff5733, 1, 4, true);
         decorations?.postFX.addGlow(0x89f335, 0.9, 2, true);
         decorations?.postFX.addBokeh(0.2, 0.5);
         ground?.postFX.addBokeh(0.2, 0.5);
+        secondGround?.postFX.addBokeh(0.3, 0.5);
+        timeGround?.postFX.addBokeh(0.3, 0.5);
 
         this.runEmitter = this.add.particles(0, 0, "brush", {
             speedX: 10,
@@ -189,12 +197,6 @@ export class Game extends Scene {
             repeat: -1,
         });
 
-        if (ground) {
-            const colider = this.physics.add.collider(this.player, ground);
-            //remove the collision with the ground
-            // this.physics.world.removeCollider(colider);
-        }
-
         this.cursor = this.input.keyboard?.createCursorKeys();
 
         this.input.keyboard?.on("keydown-SPACE", () => {
@@ -215,6 +217,17 @@ export class Game extends Scene {
                 trees?.postFX.addVignette(0.1, 0.1, 0.6, 0.2);
                 decorations?.postFX.addVignette(0.5, 0.5, 0.5);
                 this.cameras.main.postFX.addVignette(0.5, 0.5, 0.6);
+
+                //ground
+                timeGround?.setAlpha(1);
+                secondGround?.setAlpha(0.3);
+                if (timeGround && this.player) {
+                    this.timeGroundColider = this.physics.add.collider(
+                        this.player,
+                        timeGround
+                    );
+                }
+                this.secondGroundColider?.destroy();
             } else {
                 bgMusic.rate = 1;
                 this.cameras.main.postFX.disable(true);
@@ -223,6 +236,17 @@ export class Game extends Scene {
                 decorations?.postFX.addGlow(0x89f335, 0.9, 2, true);
                 decorations?.postFX.addBokeh(0.2, 0.5);
                 this.cameras.main.postFX.addVignette(0.5, 0.5, 0.9);
+
+                //ground
+                timeGround?.setAlpha(0.3);
+                secondGround?.setAlpha(1);
+                if (secondGround && this.player) {
+                    this.secondGroundColider = this.physics.add.collider(
+                        this.player,
+                        secondGround
+                    );
+                }
+                this.timeGroundColider?.destroy();
             }
         });
 
