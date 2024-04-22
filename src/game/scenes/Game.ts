@@ -15,7 +15,11 @@ export class Game extends Scene {
     private runEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
     private footstep: Phaser.Sound.BaseSound | undefined;
     private secondGroundColider: Phaser.Physics.Arcade.Collider | undefined;
+    private secondGorundDamageColider:
+        | Phaser.Physics.Arcade.Collider
+        | undefined;
     private timeGroundColider: Phaser.Physics.Arcade.Collider | undefined;
+    private timeGroundDamageColider: Phaser.Physics.Arcade.Collider | undefined;
     private respawnPoints: Phaser.Tilemaps.Tile[] = [];
     private currentRespawnPoint: Phaser.Tilemaps.Tile | undefined;
 
@@ -163,6 +167,7 @@ export class Game extends Scene {
         secondGroundDamage?.setCollisionByProperty({ collision: true });
         damage?.setCollisionByProperty({ collision: true });
         timeGround?.setCollisionByProperty({ collision: true });
+        timeGroundDamage?.setCollisionByProperty({ collision: true });
 
         respawn?.forEachTile((tile) => {
             if (tile.index > 0) {
@@ -170,15 +175,9 @@ export class Game extends Scene {
             }
         });
         this.respawnPoints.reverse();
-        console.log(this.respawnPoints);
-
-        // console.log(respawnPoints);
-        // this.player?.setPosition(
-        //     respawnPoints[0].getCenterX(),
-        //     respawnPoints[0].getCenterY()
-        // );
 
         timeGround?.setAlpha(0.3);
+        timeGroundDamage?.setAlpha(0.3);
 
         function respawnPlayer(
             player: Phaser.Physics.Arcade.Sprite,
@@ -193,12 +192,13 @@ export class Game extends Scene {
             this.physics.add.collider(this.player, damage, () => {
                 respawnPlayer(this.player, this.currentRespawnPoint);
             });
-            this.physics.add.collider(this.player, secondGroundDamage, () => {
-                respawnPlayer(this.player, this.currentRespawnPoint);
-            });
-            this.physics.add.collider(this.player, timeGroundDamage, () => {
-                respawnPlayer(this.player, this.currentRespawnPoint);
-            });
+            this.secondGorundDamageColider = this.physics.add.collider(
+                this.player,
+                secondGroundDamage,
+                () => {
+                    respawnPlayer(this.player, this.currentRespawnPoint);
+                }
+            );
         }
 
         if (ground) {
@@ -219,6 +219,8 @@ export class Game extends Scene {
         ground?.postFX.addBokeh(0.2, 0.5);
         secondGround?.postFX.addBokeh(0.3, 0.5);
         timeGround?.postFX.addBokeh(0.3, 0.5);
+        timeGroundDamage?.postFX.addBokeh(0.3, 0.5);
+        secondGroundDamage?.postFX.addBokeh(0.3, 0.5);
 
         this.runEmitter = this.add.particles(0, 0, "brush", {
             speedX: 10,
@@ -283,14 +285,28 @@ export class Game extends Scene {
                 this.cameras.main.postFX.addVignette(0.5, 0.5, 0.6);
 
                 timeGround?.setAlpha(1);
+                timeGroundDamage?.setAlpha(1);
                 secondGround?.setAlpha(0.3);
-                if (timeGround && this.player) {
+                secondGroundDamage?.setAlpha(0.3);
+                if (timeGround && timeGroundDamage && this.player) {
                     this.timeGroundColider = this.physics.add.collider(
                         this.player,
                         timeGround
                     );
+                    this.timeGroundDamageColider = this.physics.add.collider(
+                        this.player,
+                        timeGroundDamage,
+                        () => {
+                            respawnPlayer(
+                                this.player,
+                                this.currentRespawnPoint
+                            );
+                        }
+                    );
                 }
+
                 this.secondGroundColider?.destroy();
+                this.secondGorundDamageColider?.destroy();
             } else {
                 bgMusic.rate = 1;
                 this.cameras.main.postFX.disable(true);
@@ -301,14 +317,28 @@ export class Game extends Scene {
                 this.cameras.main.postFX.addVignette(0.5, 0.5, 0.9);
 
                 timeGround?.setAlpha(0.3);
+                timeGroundDamage?.setAlpha(0.3);
                 secondGround?.setAlpha(1);
-                if (secondGround && this.player) {
+                secondGroundDamage?.setAlpha(1);
+                if (secondGround && secondGroundDamage && this.player) {
                     this.secondGroundColider = this.physics.add.collider(
                         this.player,
                         secondGround
                     );
+                    this.secondGorundDamageColider = this.physics.add.collider(
+                        this.player,
+                        secondGroundDamage,
+                        () => {
+                            respawnPlayer(
+                                this.player,
+                                this.currentRespawnPoint
+                            );
+                        }
+                    );
                 }
+
                 this.timeGroundColider?.destroy();
+                this.timeGroundDamageColider?.destroy();
             }
         });
 
