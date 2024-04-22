@@ -10,12 +10,14 @@ export class Game extends Scene {
         sprite: Phaser.GameObjects.TileSprite;
     }[] = [];
     private cursor: Phaser.Types.Input.Keyboard.CursorKeys | undefined;
-    private player: Phaser.Physics.Arcade.Sprite | undefined;
+    private player: Phaser.Physics.Arcade.Sprite;
     private isInTimeMode = false;
     private runEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
     private footstep: Phaser.Sound.BaseSound | undefined;
     private secondGroundColider: Phaser.Physics.Arcade.Collider | undefined;
     private timeGroundColider: Phaser.Physics.Arcade.Collider | undefined;
+    private respawnPoints: Phaser.Tilemaps.Tile[] = [];
+    private currentRespawnPoint: Phaser.Tilemaps.Tile | undefined;
 
     constructor() {
         super("Game");
@@ -95,10 +97,6 @@ export class Game extends Scene {
             tileHeight: 16,
         });
 
-        this.player = this.physics.add
-            .sprite(150, 75, "player_sprite-sheet")
-            .setOrigin(0, 0);
-
         map.addTilesetImage("environemnt", "base_tiles");
 
         const trees = map.createLayer(
@@ -125,17 +123,83 @@ export class Game extends Scene {
             mapOffset.x,
             mapOffset.y
         );
+        const secondGroundDamage = map.createLayer(
+            "SecondGroundDamage",
+            "environemnt",
+            mapOffset.x,
+            mapOffset.y
+        );
         const timeGround = map.createLayer(
             "TimeGround",
             "environemnt",
             mapOffset.x,
             mapOffset.y
         );
+        const timeGroundDamage = map.createLayer(
+            "TimeGroundDamage",
+            "environemnt",
+            mapOffset.x,
+            mapOffset.y
+        );
+        const damage = map.createLayer(
+            "Damage",
+            "environemnt",
+            mapOffset.x,
+            mapOffset.y
+        );
+        const respawn = map.createLayer(
+            "Respawn",
+            "environemnt",
+            mapOffset.x,
+            mapOffset.y
+        );
+
+        this.player = this.physics.add
+            .sprite(150, 75, "player_sprite-sheet")
+            .setOrigin(0, 0);
+
         ground?.setCollisionByProperty({ collision: true });
         secondGround?.setCollisionByProperty({ collision: true });
+        secondGroundDamage?.setCollisionByProperty({ collision: true });
+        damage?.setCollisionByProperty({ collision: true });
         timeGround?.setCollisionByProperty({ collision: true });
 
+        respawn?.forEachTile((tile) => {
+            if (tile.index > 0) {
+                this.respawnPoints.push(tile);
+            }
+        });
+        this.respawnPoints.reverse();
+        console.log(this.respawnPoints);
+
+        // console.log(respawnPoints);
+        // this.player?.setPosition(
+        //     respawnPoints[0].getCenterX(),
+        //     respawnPoints[0].getCenterY()
+        // );
+
         timeGround?.setAlpha(0.3);
+
+        function respawnPlayer(
+            player: Phaser.Physics.Arcade.Sprite,
+            respawnPoint?: Phaser.Tilemaps.Tile
+        ) {
+            const x = respawnPoint ? respawnPoint.getCenterX() : 150;
+            const y = respawnPoint ? respawnPoint.getCenterY() : 75;
+            player?.setPosition(x, y);
+        }
+
+        if (damage && secondGroundDamage && timeGroundDamage && this.player) {
+            this.physics.add.collider(this.player, damage, () => {
+                respawnPlayer(this.player, this.currentRespawnPoint);
+            });
+            this.physics.add.collider(this.player, secondGroundDamage, () => {
+                respawnPlayer(this.player, this.currentRespawnPoint);
+            });
+            this.physics.add.collider(this.player, timeGroundDamage, () => {
+                respawnPlayer(this.player, this.currentRespawnPoint);
+            });
+        }
 
         if (ground) {
             this.physics.add.collider(this.player, ground);
@@ -218,7 +282,6 @@ export class Game extends Scene {
                 decorations?.postFX.addVignette(0.5, 0.5, 0.5);
                 this.cameras.main.postFX.addVignette(0.5, 0.5, 0.6);
 
-                //ground
                 timeGround?.setAlpha(1);
                 secondGround?.setAlpha(0.3);
                 if (timeGround && this.player) {
@@ -237,7 +300,6 @@ export class Game extends Scene {
                 decorations?.postFX.addBokeh(0.2, 0.5);
                 this.cameras.main.postFX.addVignette(0.5, 0.5, 0.9);
 
-                //ground
                 timeGround?.setAlpha(0.3);
                 secondGround?.setAlpha(1);
                 if (secondGround && this.player) {
@@ -304,6 +366,19 @@ export class Game extends Scene {
             ) {
                 this.runEmitter.setAlpha(0);
                 this.footstep?.pause();
+            }
+        }
+
+        for (let i = 0; i < this.respawnPoints.length; i++) {
+            const distance = Phaser.Math.Distance.Between(
+                this.player?.x,
+                this.player?.y,
+                this.respawnPoints[i].getCenterX(),
+                this.respawnPoints[i].getCenterY()
+            );
+            if (distance < 20) {
+                this.currentRespawnPoint = this.respawnPoints[i];
+                this.respawnPoints.splice(i, 1);
             }
         }
     }
