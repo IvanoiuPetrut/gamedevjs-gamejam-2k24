@@ -1,10 +1,8 @@
 import { Game as MainGame } from "./scenes/Game";
 import { Preload } from "./scenes/Preload";
-import { MainMenu } from "./scenes/MainMenu";
+import { Intro } from "./scenes/Intro";
 import { WEBGL, AUTO, Game, Types } from "phaser";
 
-//  Find out more information about the Game Config at:
-//  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
 const config: Types.Core.GameConfig = {
     type: WEBGL,
     width: 352, //192
@@ -20,7 +18,7 @@ const config: Types.Core.GameConfig = {
     },
     parent: "game-container",
     backgroundColor: "#1c1b1b",
-    scene: [Preload, MainGame, MainMenu],
+    scene: [Preload, Intro, MainGame],
 };
 
 const StartGame = (parent) => {

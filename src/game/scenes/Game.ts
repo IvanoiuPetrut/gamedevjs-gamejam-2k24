@@ -30,6 +30,8 @@ export class Game extends Scene {
     preload() {}
 
     create() {
+        this.cameras.main.fadeIn(1000, 0, 0, 0);
+
         const bgMusic = this.sound.add("bg-music", {
             loop: true,
             volume: 0.3,
@@ -181,8 +183,16 @@ export class Game extends Scene {
 
         function respawnPlayer(
             player: Phaser.Physics.Arcade.Sprite,
+            cameras: Phaser.Cameras.Scene2D.CameraManager,
             respawnPoint?: Phaser.Tilemaps.Tile
         ) {
+            cameras.main.fade(10, 0, 0, 0);
+            cameras.main.once(
+                Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
+                () => {
+                    cameras.main.fadeIn(100, 0, 0, 0);
+                }
+            );
             const x = respawnPoint ? respawnPoint.getCenterX() : 150;
             const y = respawnPoint ? respawnPoint.getCenterY() : 75;
             player?.setPosition(x, y);
@@ -190,13 +200,21 @@ export class Game extends Scene {
 
         if (damage && secondGroundDamage && timeGroundDamage && this.player) {
             this.physics.add.collider(this.player, damage, () => {
-                respawnPlayer(this.player, this.currentRespawnPoint);
+                respawnPlayer(
+                    this.player,
+                    this.cameras,
+                    this.currentRespawnPoint
+                );
             });
             this.secondGorundDamageColider = this.physics.add.collider(
                 this.player,
                 secondGroundDamage,
                 () => {
-                    respawnPlayer(this.player, this.currentRespawnPoint);
+                    respawnPlayer(
+                        this.player,
+                        this.cameras,
+                        this.currentRespawnPoint
+                    );
                 }
             );
         }
@@ -221,6 +239,8 @@ export class Game extends Scene {
         timeGround?.postFX.addBokeh(0.3, 0.5);
         timeGroundDamage?.postFX.addBokeh(0.3, 0.5);
         secondGroundDamage?.postFX.addBokeh(0.3, 0.5);
+
+        respawn?.postFX.addGlow(0xff5733, 0.9, 1, false);
 
         this.runEmitter = this.add.particles(0, 0, "brush", {
             speedX: 10,
@@ -282,7 +302,7 @@ export class Game extends Scene {
                 decorations?.postFX.addBarrel(0.5);
                 trees?.postFX.addVignette(0.1, 0.1, 0.6, 0.2);
                 decorations?.postFX.addVignette(0.5, 0.5, 0.5);
-                this.cameras.main.postFX.addVignette(0.5, 0.5, 0.6);
+                this.cameras.main.postFX.addVignette(0.5, 0.5, 0.7, 0.4);
 
                 timeGround?.setAlpha(1);
                 timeGroundDamage?.setAlpha(1);
@@ -299,6 +319,7 @@ export class Game extends Scene {
                         () => {
                             respawnPlayer(
                                 this.player,
+                                this.cameras,
                                 this.currentRespawnPoint
                             );
                         }
@@ -331,6 +352,7 @@ export class Game extends Scene {
                         () => {
                             respawnPlayer(
                                 this.player,
+                                this.cameras,
                                 this.currentRespawnPoint
                             );
                         }
@@ -376,7 +398,8 @@ export class Game extends Scene {
                 this.footstep?.pause();
             }
 
-            if (this.cursor.up?.isDown && this.player?.body?.blocked.down) {
+            // && this.player?.body?.blocked.down
+            if (this.cursor.up?.isDown) {
                 this.player?.setVelocityY(-JUMP_SPEED);
                 this.player?.anims.play("jump", true);
             }

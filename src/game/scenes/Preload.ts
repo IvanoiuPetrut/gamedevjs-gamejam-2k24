@@ -8,6 +8,7 @@ export class Preload extends Scene {
     preload() {
         this.load.setPath("assets");
 
+        this.load.image("bg_story", "background/bg_story.png");
         this.load.image("bg1", "background/bg1.png");
         this.load.image("bg2", "background/bg2.png");
         this.load.image("bg3", "background/bg3.png");
@@ -31,6 +32,6 @@ export class Preload extends Scene {
     }
 
     create() {
-        this.scene.start("Game");
+        this.scene.start("Intro");
     }
 }
