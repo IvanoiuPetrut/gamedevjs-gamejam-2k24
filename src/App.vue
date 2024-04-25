@@ -19,6 +19,19 @@ onMounted(() => {
                 "#f9b7b7",
             ],
         });
+
+        setTimeout(() => {
+            confetti.addConfetti({
+                confettiColors: [
+                    "#89f335",
+                    "#91f147",
+                    "#bbfa8a",
+                    "#f9e1b1",
+                    "#f9d4b7",
+                    "#f9b7b7",
+                ],
+            });
+        }, 500);
     });
 });
 </script>

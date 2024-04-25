@@ -5,10 +5,10 @@ import { WEBGL, AUTO, Game, Types } from "phaser";
 
 const config: Types.Core.GameConfig = {
     type: WEBGL,
-    width: 352, //192
-    height: 160, //112
+    width: 352,
+    height: 160,
     pixelArt: true,
-    zoom: 3, // 6
+    zoom: 3,
     physics: {
         default: "arcade",
         arcade: {
