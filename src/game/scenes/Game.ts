@@ -34,7 +34,7 @@ export class Game extends Scene {
 
         const bgMusic = this.sound.add("bg-music", {
             loop: true,
-            volume: 0.3,
+            volume: 0.5,
         });
         const jumpSound = this.sound.add("jump", {
             volume: 1,
@@ -47,7 +47,7 @@ export class Game extends Scene {
         this.footstep = this.sound.add("footstep", {
             volume: 0.5,
             loop: true,
-            rate: 0.3,
+            rate: 0.5,
         });
         bgMusic.play();
         this.footstep.play();

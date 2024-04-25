@@ -25,7 +25,9 @@ export class Preload extends Scene {
 
         this.load.image("brush", "brush2.png");
 
-        this.load.audio("bg-music", "audio/bg.wav");
+        this.load.audio("bg-music", "audio/bg.ogg");
+        this.load.audio("intro-bg-music", "audio/intro_bg.ogg");
+        this.load.audio("next", "audio/next.wav");
         this.load.audio("footstep", "audio/footstep.ogg");
         this.load.audio("jump", "audio/jump.ogg");
         this.load.audio("time-mode", "audio/time-mode.ogg");
