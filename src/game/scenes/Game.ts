@@ -1,7 +1,8 @@
 import { Scene } from "phaser";
 import { EventBus } from "../EventBus";
 
-const MOVE_SPEED = 70;
+const MAX_VELOCITY_X = 80;
+const ACCELERATION = 200;
 const JUMP_SPEED = 150;
 
 export class Game extends Scene {
@@ -13,7 +14,7 @@ export class Game extends Scene {
     private player: Phaser.Physics.Arcade.Sprite;
     private isInTimeMode = false;
     private runEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
-    private footstep: Phaser.Sound.BaseSound | undefined;
+    private footstep: Phaser.Sound.BaseSound;
     private secondGroundColider: Phaser.Physics.Arcade.Collider | undefined;
     private secondGorundDamageColider:
         | Phaser.Physics.Arcade.Collider
@@ -377,7 +378,6 @@ export class Game extends Scene {
             }
         });
 
-        EventBus.emit("game-finished");
         EventBus.emit("current-scene-ready", this);
     }
 
@@ -393,46 +393,41 @@ export class Game extends Scene {
         }
 
         if (this.cursor) {
+            const playerVelocityX = this.player?.body?.velocity.x || 0;
             if (this.cursor.left?.isDown) {
-                this.player?.setVelocityX(-MOVE_SPEED);
-                this.player?.anims.play("walk", true);
-                this.player?.setFlipX(true);
+                // Accelerate left
+                if (playerVelocityX > -MAX_VELOCITY_X) {
+                    this.player.setAccelerationX(-ACCELERATION);
+                } else {
+                    this.player.setAccelerationX(0);
+                }
+                this.player.anims.play("walk", true);
+                this.player.setFlipX(true);
                 this.runEmitter.setAlpha(1);
-                this.footstep?.resume();
+                this.footstep.resume();
             } else if (this.cursor.right?.isDown) {
-                this.player?.setVelocityX(MOVE_SPEED);
-                this.player?.anims.play("walk", true);
-                this.player?.setFlipX(false);
+                // Accelerate right
+                if (playerVelocityX < MAX_VELOCITY_X) {
+                    this.player.setAccelerationX(ACCELERATION);
+                } else {
+                    this.player.setAccelerationX(0);
+                }
+                this.player.anims.play("walk", true);
+                this.player.setFlipX(false);
                 this.runEmitter.setAlpha(1);
-                this.footstep?.resume();
+                this.footstep.resume();
             } else {
-                this.player?.setVelocityX(0);
-                this.player?.anims.play("idle", true);
+                // Decelerate to stop
+                if (playerVelocityX !== 0) {
+                    const deceleration =
+                        playerVelocityX > 0 ? -ACCELERATION : ACCELERATION;
+                    this.player.setAccelerationX(deceleration);
+                } else {
+                    this.player.setAccelerationX(0);
+                }
+                this.player.anims.play("idle", true);
                 this.runEmitter.setAlpha(0);
-                this.footstep?.pause();
-            }
-
-            if (this.cursor.up?.isDown && this.player?.body?.blocked.down) {
-                this.player?.setVelocityY(-JUMP_SPEED);
-                this.player?.anims.play("jump", true);
-                this.jumpSound.play();
-            }
-
-            if (this.cursor.left?.isDown && this.cursor.right?.isDown) {
-                this.player?.setVelocityX(0);
-                this.player?.anims.play("idle", true);
-                this.runEmitter.setAlpha(0);
-            }
-
-            if (this.cursor.left?.isDown && !this.player?.body?.blocked.down) {
-                this.runEmitter.setAlpha(0);
-                this.footstep?.pause();
-            } else if (
-                this.cursor.right?.isDown &&
-                !this.player?.body?.blocked.down
-            ) {
-                this.runEmitter.setAlpha(0);
-                this.footstep?.pause();
+                this.footstep.pause();
             }
         }
 
