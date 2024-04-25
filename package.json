@@ -25,6 +25,7 @@
         "build": "vite build --config vite/config.prod.mjs"
     },
     "dependencies": {
+        "js-confetti": "^0.12.0",
         "phaser": "^3.80.1",
         "phaser-raycaster": "^0.10.10",
         "vue": "^3.4.20"

@@ -22,6 +22,10 @@ export class Game extends Scene {
     private timeGroundDamageColider: Phaser.Physics.Arcade.Collider | undefined;
     private respawnPoints: Phaser.Tilemaps.Tile[] = [];
     private currentRespawnPoint: Phaser.Tilemaps.Tile | undefined;
+    private gameFinished = false;
+    private finishSound: Phaser.Sound.BaseSound;
+    private respawnCheckSound: Phaser.Sound.BaseSound;
+    private jumpSound: Phaser.Sound.BaseSound;
 
     constructor() {
         super("Game");
@@ -32,11 +36,20 @@ export class Game extends Scene {
     create() {
         this.cameras.main.fadeIn(1000, 0, 0, 0);
 
+        this.respawnCheckSound = this.sound.add("respawn-check", {
+            volume: 1,
+        });
+        this.finishSound = this.sound.add("finish", {
+            volume: 0.7,
+        });
+        const deathSound = this.sound.add("death", {
+            volume: 0.5,
+        });
         const bgMusic = this.sound.add("bg-music", {
             loop: true,
             volume: 0.5,
         });
-        const jumpSound = this.sound.add("jump", {
+        this.jumpSound = this.sound.add("jump", {
             volume: 1,
             rate: 0.8,
         });
@@ -47,12 +60,11 @@ export class Game extends Scene {
         this.footstep = this.sound.add("footstep", {
             volume: 0.5,
             loop: true,
-            rate: 0.5,
+            rate: 0.3,
         });
         bgMusic.play();
         this.footstep.play();
         this.footstep.pause();
-        // * Paralax BG
 
         const { width, height } = this.scale;
         this.add.image(0, 0, "bg1").setOrigin(0, 0).setScrollFactor(0);
@@ -186,6 +198,7 @@ export class Game extends Scene {
             cameras: Phaser.Cameras.Scene2D.CameraManager,
             respawnPoint?: Phaser.Tilemaps.Tile
         ) {
+            deathSound.play();
             cameras.main.fade(10, 0, 0, 0);
             cameras.main.once(
                 Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
@@ -289,7 +302,7 @@ export class Game extends Scene {
             if (this.player?.body?.blocked.down) {
                 this.player?.setVelocityY(-JUMP_SPEED);
                 this.player?.anims.play("jump", true);
-                jumpSound.play();
+                this.jumpSound.play();
             }
         });
 
@@ -364,6 +377,7 @@ export class Game extends Scene {
             }
         });
 
+        EventBus.emit("game-finished");
         EventBus.emit("current-scene-ready", this);
     }
 
@@ -398,10 +412,10 @@ export class Game extends Scene {
                 this.footstep?.pause();
             }
 
-            // && this.player?.body?.blocked.down
-            if (this.cursor.up?.isDown) {
+            if (this.cursor.up?.isDown && this.player?.body?.blocked.down) {
                 this.player?.setVelocityY(-JUMP_SPEED);
                 this.player?.anims.play("jump", true);
+                this.jumpSound.play();
             }
 
             if (this.cursor.left?.isDown && this.cursor.right?.isDown) {
@@ -429,10 +443,17 @@ export class Game extends Scene {
                 this.respawnPoints[i].getCenterX(),
                 this.respawnPoints[i].getCenterY()
             );
-            if (distance < 20) {
+            if (distance < 35) {
                 this.currentRespawnPoint = this.respawnPoints[i];
                 this.respawnPoints.splice(i, 1);
+                this.respawnCheckSound.play();
             }
+        }
+
+        if (this.respawnPoints.length === 0 && !this.gameFinished) {
+            this.finishSound.play();
+            EventBus.emit("game-finished");
+            this.gameFinished = true;
         }
     }
 }
